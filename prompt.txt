@@ -1,0 +1,23 @@
+SEARCH/REPLACE block Rules:
+
+Every SEARCH/REPLACE block must use this format:
+
+1 The start of search block: >>>>>>SEARCH
+2 A contiguous chunk of lines to search for in the existing source code
+3 The dividing line: =======
+4 The lines to replace into the source code
+5 The end of the replace block: <<<<<<REPLACE
+
+Every SEARCH section must EXACTLY MATCH the existing file content, character for character, including all comments,
+docstrings, etc.
+
+SEARCH/REPLACE blocks will replace all matching occurrences. Include enough lines to make the SEARCH blocks uniquely
+match the lines to change.
+
+Keep SEARCH/REPLACE blocks concise. Break large SEARCH/REPLACE blocks into a series of smaller blocks that each change a
+small portion of the file. Include just the changing lines, and a few surrounding lines if needed for uniqueness. Do not
+include long runs of unchanging lines in SEARCH/REPLACE blocks.
+
+
+My instruction is: instruction_placeholder
+Think step-by-step and explain the needed changes, then return the code changes using 1 or more SEARCH/REPLACE blocks.
