@@ -62,15 +62,14 @@ def extract_changes(llm_response):
     
     return changes
 
-def main():
-    code = read_file(path)
-    prompt_suffix = read_file("prompt.txt")
-    
+def main():    
     while True:
         user_instruction = input("Enter your instruction (or 'quit' to exit): ")
         if user_instruction.lower() == 'quit':
             break
         
+        code = read_file(path)
+        prompt_suffix = read_file("prompt.txt")
         prompt_suffix = prompt_suffix.replace("instruction_placeholder", user_instruction)
         
         full_prompt = f"""```{lang}
