@@ -19,5 +19,5 @@ small portion of the file. Include just the changing lines, and a few surroundin
 include long runs of unchanging lines in SEARCH/REPLACE blocks.
 
 
-My instruction is: instruction_placeholder
+The user's prompt is: instruction_placeholder
 Think step-by-step and explain the needed changes, then return the code changes using 1 or more SEARCH/REPLACE blocks.
