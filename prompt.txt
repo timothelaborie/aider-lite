@@ -8,8 +8,7 @@ Every SEARCH/REPLACE block must use this format:
 4 The lines to replace into the source code
 5 The end of the replace block: <<<<<<REPLACE
 
-Every SEARCH section must EXACTLY MATCH the existing file content, character for character, including all comments,
-docstrings, etc.
+Every SEARCH section must EXACTLY MATCH the existing code content, character for character, including all comments and indentation.
 
 SEARCH/REPLACE blocks will replace all matching occurrences. Include enough lines to make the SEARCH blocks uniquely
 match the lines to change.

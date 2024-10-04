@@ -24,10 +24,12 @@ def apply_changes(code, changes):
         else:
             code = re.sub(search_pattern, change['replace'], code, flags=re.DOTALL)
 
-        # If no match was found, try with 4 extra spaces
+        # If no match was found, try with 4 extra spaces for each line
         if search_pattern not in code:
-            indented_search_pattern = re.escape('    ' + change['search'])
-            code = re.sub(indented_search_pattern, change['replace'], code, flags=re.DOTALL)
+            indented_search = '\n'.join('    ' + line for line in change['search'].split('\n'))
+            indented_replace = '\n'.join('    ' + line for line in change['replace'].split('\n'))
+            indented_search_pattern = re.escape(indented_search)
+            code = re.sub(indented_search_pattern, indented_replace, code, flags=re.DOTALL)
 
     return code
 
