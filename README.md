@@ -9,7 +9,7 @@ Compared to the [original](https://github.com/paul-gauthier/aider), this remake 
 Another benefit is you don't have to add your file to the chat every time you launch it.
 
 # How to use
-1. Edit the first 2 lines of aider-lite.py to add your file path and programming language (used for the code block).
+1. Run aider-lite.py, with the first parameter being your file path and the second parameter being the programming language (used for the code block).
 2. Create an env variable called OPENROUTER_API_KEY containing your openrouter key
 3. Run the script
 4. Write an instruction like "Add a button to send an email" and press enter
