@@ -21,7 +21,7 @@ def delete_empty_lines(code):
 
 
 def apply_changes(code, changes):
-    for change in changes:
+    for (j,change) in enumerate(changes):
         search = change['search']
         replace = change['replace']
 
@@ -39,7 +39,7 @@ def apply_changes(code, changes):
                     print(f"Match found after adding {i} indentations")
                     break
                 if i == 9:
-                    print("\n\nPROBLEM: Failed to apply changes: no match found after adding 10 indentations\n\n")
+                    print(f"\n\nPROBLEM: Failed to apply change {j+1}: no match found after adding 10 indentations\n\n")
 
         code = replaced_code
 
@@ -67,13 +67,13 @@ def send_to_llm_streaming(prompt):
     )
 
     response = client.chat.completions.create(
-        model="anthropic/claude-3.5-sonnet",
-        # model="openai/gpt-4o",
+        model=None,
         messages=[
             {"role": "user", "content": prompt}
         ],
         stream=True,
         temperature=0.0,
+        extra_body={"route": "fallback", "models": ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o"]}
     )
 
     full_response = ""
