@@ -7,17 +7,29 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 def read_file(filename):
-    with open(filename, "r") as file:
+    with open(filename, "r", encoding="utf-8") as file:
         return file.read()
 
 def write_file(filename, content):
-    with open(filename, "w") as file:
+    with open(filename, "w", encoding="utf-8") as file:
         file.write(content)
 
 def delete_empty_lines(code):
     # if a line contains only white space, replace it with ""
     code = re.sub(r"^\s+$", "", code, flags=re.MULTILINE)
     return code
+
+
+def add_indentation(text):
+    lines = text.split("\n")
+    indented_lines = []
+    for line in lines:
+        if line.strip() != "":
+            indented_lines.append("    " + line)
+        else:
+            indented_lines.append(line)
+    res = "\n".join(indented_lines)
+    return res
 
 
 def apply_changes(code, changes):
@@ -30,16 +42,16 @@ def apply_changes(code, changes):
 
         replaced_code = code.replace(search, replace)
         if replaced_code == code:
-            print("Failed to apply changes: adding spaces until a match is found")
+            # print(f"\n\nFailed to apply change {j+1}: adding spaces until a match is found")
             for i in range(10):
-                search = "    " + search
-                replace = "    " + replace
+                search = add_indentation(search)
+                replace = add_indentation(replace)
                 replaced_code = code.replace(search, replace)
                 if replaced_code != code:
-                    print(f"Match found after adding {i} indentations")
+                    # print(f"Match found after adding {i} indentations\n\n")
                     break
                 if i == 9:
-                    print(f"\n\nPROBLEM: Failed to apply change {j+1}: no match found after adding 10 indentations\n\n")
+                    print(f"PROBLEM: Failed to apply change {j+1}: no match found after adding 10 indentations\n\n")
 
         code = replaced_code
 
@@ -47,14 +59,27 @@ def apply_changes(code, changes):
 
 def extract_changes(llm_response):
     changes = []
-    pattern = r'>>>>SEARCH\n(.*?)\n====\n(.*?)<<<<REPLACE'
-    matches = re.findall(pattern, llm_response, re.DOTALL)
+    current_change = {}
+    in_code_block = False
+    code_block_content = []
     
-    for match in matches:
-        changes.append({
-            'search': match[0].strip(),
-            'replace': match[1].strip()
-        })
+    for line in llm_response.split('\n'):
+        if line.strip().startswith('```'):
+            if in_code_block:
+                # End of code block
+                if 'search' not in current_change:
+                    current_change['search'] = '\n'.join(code_block_content)
+                else:
+                    current_change['replace'] = '\n'.join(code_block_content)
+                    changes.append(current_change)
+                    current_change = {}
+                in_code_block = False
+                code_block_content = []
+            else:
+                # Start of code block
+                in_code_block = True
+        elif in_code_block:
+            code_block_content.append(line)
     
     return changes
 
@@ -103,6 +128,7 @@ def main():
         code = delete_empty_lines(code)
         prompt_suffix = read_file("prompt.txt")
         prompt_suffix = prompt_suffix.replace("instruction_placeholder", user_instruction)
+        prompt_suffix = prompt_suffix.replace("programming_language_placeholder", lang)
         
         full_prompt = f"""The current date is Tuesday, October 10th 2023, 10:30am
 ```{lang}
@@ -120,7 +146,7 @@ def main():
             write_file(path, code)
             print("\n\n\n")
         else:
-            print("No changes to apply")
+            print("ERROR: Could not find any search and replace pairs!")
 
 if __name__ == "__main__":
     main()
