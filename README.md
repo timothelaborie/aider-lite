@@ -4,13 +4,18 @@ Lightweight version of Aider meant for editing a single file in an existing repo
 # Features
 The idea behind Aider is that you can ask an LLM to make changes in a code file and it will use search/replace commands so you don't have to copy paste anything.
 
-Compared to the [original](https://github.com/paul-gauthier/aider), this remake has a much more simple and concise system prompt, so it uses far fewer tokens. The prompt also has fewer distractions, so the LLM can perform better.
+Compared to the [original](https://github.com/paul-gauthier/aider), this remake uses a two-step process:
 
-Another benefit is you don't have to add your file to the chat every time you launch it.
+1. The LLM (Usually 3.5 Sonnet) is given a code block containing the entire file, followed by the user instruction. There is no system prompt, so the model can focus exclusively on solving the coding task.
+2. A second request is sent with the code block first, then the response from the first step, then some instructions on how to make search/replace blocks.
+
+The instructions are simple and concise, so this tool uses far fewer tokens than the real Aider. The two-step approach allows the LLM to perform better by avoiding distracting instructions.
+
+This tool works best when you have a large file where modifications often require changing multiple parts of it.
 
 # How to use
-1. Run aider-lite.py, with the first parameter being your file path and the second parameter being the programming language (used for the code block).
-2. Create an env variable called OPENROUTER_API_KEY containing your openrouter key
+1. Create an env variable called OPENROUTER_API_KEY containing your openrouter key
+2. Run aider-lite.py, with the first parameter being your file path and the second parameter being the programming language that the code block should have (for example "python").
 3. Run the script
 4. Write an instruction like "Add an API to obtain the list of documents" and press enter
 5. Review the changes made by the LLM using something like Github Desktop
