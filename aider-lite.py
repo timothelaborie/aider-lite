@@ -6,7 +6,7 @@ import sys
 from openai import OpenAI
 from dotenv import load_dotenv
 
-model_list = ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o", "qwen/qwen-2.5-coder-32b-instruct"]
+model_list = ["anthropic/claude-3.5-sonnet:beta", "google/gemini-exp-1206", "openai/gpt-4o"]
 
 def read_file(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -93,27 +93,21 @@ def send_to_llm_streaming(prompt, id):
         "models": arranged_models
     }
 
-    # Add provider configuration if id is 2
-    if id == 2:
-        extra_body["provider"] = {
-            "order": [
-                "DeepInfra",
-                "Fireworks"
-            ]
-        }
-    
     client = OpenAI(
         base_url="https://openrouter.ai/api/v1/",
         api_key=os.getenv("OPENROUTER_API_KEY"),
     )    
 
     response = client.chat.completions.create(
-        model=None,
         messages=[
             {"role": "user", "content": prompt}
         ],
         stream=True,
         temperature=0.0,
+
+        # model=model_list[id],
+
+        model=None,
         extra_body=extra_body,
     )
 
