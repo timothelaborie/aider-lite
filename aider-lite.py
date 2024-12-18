@@ -7,6 +7,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 model_list = ["anthropic/claude-3.5-sonnet:beta", "google/gemini-exp-1206", "openai/gpt-4o"]
+prevent_lazyness_prefix = "The current date is Tuesday, October 8th 2024, 10:30am"
 
 def read_file(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -100,6 +101,7 @@ def send_to_llm_streaming(prompt, id):
 
     response = client.chat.completions.create(
         messages=[
+            {"role": "system", "content": prevent_lazyness_prefix},
             {"role": "user", "content": prompt}
         ],
         stream=True,
@@ -147,7 +149,8 @@ def main():
         analysis = send_to_llm_streaming(first_prompt, id=0)
 
         # Second LLM request - Generate search/replace blocks
-        second_prompt = f"""```{lang}
+        second_prompt = f"""
+```{lang}
 {code}
 ```
 
@@ -167,10 +170,16 @@ For each change that needs to be made, do the following:
 Every search section must EXACTLY MATCH the existing code content, character for character, including all comments.
 Each pair of code blocks will replace the first matching occurrence.
 search sections should always contain at least 5 lines so that there is exactly one match in the code (very important).
-Do not create search sections that only contain closing brackets like }}, as they are ambiguous. Always include at least 2 of the lines that come before the brackets."""
+Do not create search sections that only contain closing brackets like }}, as they are ambiguous. Always include at least 2 of the lines that come before the brackets.
+replace sections should not contain placeholder comments like "// ... keep existing implementation"
+""".strip()
 
         print("\nGenerating code changes:")
-        changes_response = send_to_llm_streaming(second_prompt, id=0)
+        try:
+            changes_response = send_to_llm_streaming(second_prompt, id=0)
+        except:
+            print("ERROR: Could not generate code changes! Trying again")
+            changes_response = send_to_llm_streaming(second_prompt, id=0)
         
         changes = extract_changes(changes_response)
         if changes:
