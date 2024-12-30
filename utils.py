@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from openai import OpenAI
-from constants import prevent_lazyness_prefix, model_list, client
+from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client
 
 def read_file(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -77,14 +77,14 @@ def send_to_llm_streaming(prompt:str) -> str:
   
     response = client.chat.completions.create(
         messages=[
-            {"role": "system", "content": prevent_lazyness_prefix},
+            {"role": "system", "content": PREVENT_LAZINESS_PREFIX},
             {"role": "user", "content": prompt}
         ],
         stream=True,
         temperature=0.0,
         # model=model_list[0],
         model=None,
-        extra_body={"route": "fallback","models": model_list},
+        extra_body={"route": "fallback","models": MODEL_LIST},
     )
 
     full_response = ""
