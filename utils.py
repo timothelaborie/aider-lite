@@ -1,7 +1,6 @@
 import os
 import re
-import sys
-from openai import OpenAI
+import json
 from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client
 
 def read_file(filename):
@@ -96,3 +95,55 @@ def send_to_llm_streaming(prompt:str) -> str:
 
     print()
     return full_response
+
+def load_config():
+    with open('config.json', 'r') as f:
+        return json.load(f)
+
+def get_project(config, project_id):
+    for project in config['projects']:
+        if project['id'] == project_id:
+            return project
+    raise ValueError(f"Project {project_id} not found in config")
+
+def toggle_file(files, file_index):
+    if 0 <= file_index < len(files):
+        files[file_index]['included'] = not files[file_index]['included']
+        return True
+    return False
+
+def get_concatenated_code(project):
+    code_blocks = []
+    for file in project['files']:
+        if file['included']:
+            path = os.path.join(project['basePath'], file['name'])
+            code = read_file(path)
+            code = delete_empty_lines(code)
+            code_blocks.append(code)
+    return '\n\n'.join(code_blocks)
+
+def apply_changes_to_codebase(project, changes):
+    modified_files = {}
+    
+    for file in project['files']:
+        if not file['included']:
+            continue
+            
+        path = os.path.join(project['basePath'], file['name'])
+        code = read_file(path)
+        
+        # Apply each change that matches this file's content
+        for change in changes:
+            if change['search'] in code:
+                code = apply_changes_to_code(code, [change])
+                modified_files[path] = code
+    
+    # Write all modified files
+    for path, code in modified_files.items():
+        write_file(path, code)
+
+def list_files(project):
+    print("\nCurrent files:")
+    for i, file in enumerate(project['files']):
+        status = "[x]" if file['included'] else "[ ]"
+        print(f"{i}. {status} {file['name']} ({file['language']})")
