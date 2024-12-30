@@ -1,0 +1,20 @@
+{
+  "projects": [
+    {
+      "id": "project1",
+      "basePath": "./src/",
+      "files": [
+        {
+          "name": "main.py",
+          "language": "python",
+          "included": true
+        },
+        {
+          "name": "utils.py", 
+          "language": "python",
+          "included": false
+        }
+      ]
+    }
+  ]
+}
