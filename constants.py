@@ -25,3 +25,5 @@ search sections should always contain at least 5 lines so that there is exactly 
 Do not create search sections that only contain closing brackets like }}, as they are ambiguous. Always include at least 2 of the lines that come before the brackets.
 replace sections should not contain placeholder comments like "// ... keep existing implementation"
 """.strip()
+
+DEBUG = False

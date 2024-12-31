@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client
+from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client, DEBUG
 
 def read_file(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -11,8 +11,8 @@ def write_file(filename, content):
     with open(filename, "w", encoding="utf-8") as file:
         file.write(content)
 
-def delete_empty_lines(code):
-    code = re.sub(r"^\s+$", "", code, flags=re.MULTILINE)
+def delete_empty_lines_and_trailing_whitespace(code):
+    code = re.sub(r"\s+$", "", code, flags=re.MULTILINE)
     return code
 
 def add_indentation(text):
@@ -26,12 +26,15 @@ def add_indentation(text):
     return "\n".join(indented_lines)
 
 def apply_changes_to_code(code, changes):
+    any_changes_applied = False
+    code = delete_empty_lines_and_trailing_whitespace(code)
+    
     for (j,change) in enumerate(changes):
         search = change['search']
         replace = change['replace']
 
-        search = delete_empty_lines(search)
-        replace = delete_empty_lines(replace)
+        search = delete_empty_lines_and_trailing_whitespace(search)
+        replace = delete_empty_lines_and_trailing_whitespace(replace)
 
         replaced_code = code.replace(search, replace)
         if replaced_code == code:
@@ -40,13 +43,14 @@ def apply_changes_to_code(code, changes):
                 replace = add_indentation(replace)
                 replaced_code = code.replace(search, replace)
                 if replaced_code != code:
+                    any_changes_applied = True
                     break
-                if i == 9:
-                    print(f"PROBLEM: Failed to apply change {j+1}: no match found after adding 10 indentations\n\n")
+        else:
+            any_changes_applied = True
 
         code = replaced_code
 
-    return code
+    return code, any_changes_applied
 
 def extract_changes_from_response(llm_response):
     changes = []
@@ -73,6 +77,9 @@ def extract_changes_from_response(llm_response):
     return changes
 
 def send_to_llm_streaming(prompt:str) -> str:
+    if DEBUG:
+        with open("debug_output.txt", "r") as f:
+            return f.read()
   
     response = client.chat.completions.create(
         messages=[
@@ -118,29 +125,42 @@ def get_concatenated_code(project):
         if file['included']:
             path = os.path.join(project['basePath'], file['name'])
             code = read_file(path)
-            code = delete_empty_lines(code)
+            code = delete_empty_lines_and_trailing_whitespace(code)
             code_blocks.append(code)
     return '\n\n'.join(code_blocks)
 
 def apply_changes_to_codebase(project, changes):
-    modified_files = {}
-    
+    # First read all files into memory
+    files_content = {}
     for file in project['files']:
         if not file['included']:
             continue
             
         path = os.path.join(project['basePath'], file['name'])
-        code = read_file(path)
+        files_content[path] = read_file(path)
+    
+    # Process each change across all files
+    for change in changes:
+        print(f"\nApplying change: {change['search'].replace('\n', ' ')[:20]}...")
+        change_success = False
         
-        # Apply each change that matches this file's content
-        for change in changes:
-            if change['search'] in code:
-                code = apply_changes_to_code(code, [change])
-                modified_files[path] = code
+        # Apply this change to all files
+        for path, code in files_content.items():
+            print(f"Processing file: {os.path.basename(path)}")
+            newcode, success = apply_changes_to_code(code, [change])
+            files_content[path] = newcode
+            if success:
+                change_success = True
+                print("Change applied successfully!")
+                break
+
+        if not change_success:
+            print("Change could not be applied to any file!")
     
     # Write all modified files
-    for path, code in modified_files.items():
+    for path, code in files_content.items():
         write_file(path, code)
+
 
 def list_files(project):
     print("\nCurrent files:")
