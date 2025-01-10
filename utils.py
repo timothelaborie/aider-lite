@@ -12,8 +12,8 @@ def write_file(filename, content):
         file.write(content)
 
 def delete_empty_lines_and_trailing_whitespace(code):
-    code = re.sub(r"\s+$", "", code, flags=re.MULTILINE)
-    return code
+    # "empty lines" are lines with only whitespaces, they are made empty to avoid issues with the LLM
+    return re.sub(r"[ \t]+$", "", code, flags=re.MULTILINE)
 
 def add_indentation(text):
     lines = text.split("\n")
