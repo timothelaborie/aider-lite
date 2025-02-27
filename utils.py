@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client, DEBUG
+from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client, DEBUG, CODE_BLOCK
 
 def read_file(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -80,7 +80,9 @@ def send_to_llm_streaming(prompt:str) -> str:
     if DEBUG:
         with open("debug_output.txt", "r") as f:
             return f.read()
-  
+
+    # print(prompt)
+    # return "response"
     response = client.chat.completions.create(
         messages=[
             {"role": "system", "content": PREVENT_LAZINESS_PREFIX},
@@ -124,8 +126,12 @@ def get_concatenated_code(project):
     for file in project['files']:
         if file['included']:
             path = os.path.join(project['basePath'], file['name'])
+            lang = file['language']
             code = read_file(path)
             code = delete_empty_lines_and_trailing_whitespace(code)
+            code = f"""{CODE_BLOCK}{lang}
+{code}
+{CODE_BLOCK}"""
             code_blocks.append(code)
     return '\n\n'.join(code_blocks)
 
@@ -162,7 +168,7 @@ def apply_changes_to_codebase(project, changes):
         write_file(path, code)
 
 
-def list_files(project):
+def print_list_of_files(project):
     print("\nCurrent files:")
     for i, file in enumerate(project['files']):
         status = "[x]" if file['included'] else "[ ]"

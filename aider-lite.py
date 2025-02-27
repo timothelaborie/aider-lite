@@ -1,5 +1,5 @@
 import sys
-from utils import extract_changes_from_response, send_to_llm_streaming, load_config, get_project, list_files, toggle_file, get_concatenated_code, apply_changes_to_codebase
+from utils import extract_changes_from_response, send_to_llm_streaming, load_config, get_project, print_list_of_files, toggle_file, get_concatenated_code, apply_changes_to_codebase
 from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX
 
 if len(sys.argv) != 2:
@@ -11,7 +11,7 @@ config = load_config()
 project = get_project(config, project_id)
 
 while True:
-    list_files(project)
+    print_list_of_files(project)
     user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit): ")
     
     if user_instruction.lower() == 'quit':
@@ -34,9 +34,7 @@ while True:
 
     # First LLM request - Analysis
     first_prompt = f"""
-{CODE_BLOCK}
 {code}
-{CODE_BLOCK}
 {user_instruction}
 """.strip()
 
@@ -45,14 +43,15 @@ while True:
 
     # Second LLM request - Generate search/replace blocks
     second_prompt = f"""
-{CODE_BLOCK}
 {code}
-{CODE_BLOCK}
 
 I have previously given the following prompt to an assistant: {user_instruction}
 
 The assistant gave the following response:
+<response>
 {analysis}
+</response>
+
 
 {INSTRUCTIONS_SUFFIX}
 """.strip()
