@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client, DEBUG, CODE_BLOCK
+from constants import SYSTEM_PROMPT, MODEL_LIST, client, DEBUG, CODE_BLOCK
 import tiktoken
 enc = tiktoken.get_encoding("o200k_base")
 
@@ -87,7 +87,7 @@ def send_to_llm_streaming(prompt:str) -> str:
     # return "response"
     response = client.chat.completions.create(
         messages=[
-            {"role": "system", "content": PREVENT_LAZINESS_PREFIX},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ],
         stream=True,

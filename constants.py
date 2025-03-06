@@ -3,6 +3,8 @@ import os
 
 SAVE_HISTORY = True
 PREVENT_LAZINESS_PREFIX = "The current date is Tuesday, October 8th 2024, 10:30am"
+SYSTEM_INSTRUCTIONS = "\nWhen modifying code, avoid adding end-of-line comments like \"// Add new property here\""
+SYSTEM_PROMPT = PREVENT_LAZINESS_PREFIX + SYSTEM_INSTRUCTIONS
 CODE_BLOCK = "```"
 MODEL_LIST = ["anthropic/claude-3.7-sonnet:beta", "openai/gpt-4o"]
 
