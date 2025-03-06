@@ -1,6 +1,11 @@
 import sys
-from utils import extract_changes_from_response, send_to_llm_streaming, load_config, get_project, print_list_of_files, toggle_file, get_concatenated_code, apply_changes_to_codebase
-from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX
+import os
+import time
+from utils import (extract_changes_from_response, send_to_llm_streaming, 
+                  load_config, get_project, print_list_of_files, toggle_file, 
+                  get_concatenated_code, apply_changes_to_codebase,
+                  extract_first_codeblock, copy_to_clipboard)
+from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY
 
 if len(sys.argv) != 2:
     print("Usage: python script.py <project_id>")
@@ -41,8 +46,26 @@ while True:
     print("\n\n*** Analyzing changes needed ***\n")
     analysis = send_to_llm_streaming(first_prompt)
 
-    # Second LLM request - Generate search/replace blocks
-    second_prompt = f"""
+    if SAVE_HISTORY:
+        folder = os.path.join("history", time.strftime("%Y-%m-%d_%H-%M-%S"))
+        os.makedirs(folder, exist_ok=True)
+        def save_to_file(filename, content):
+            with open(os.path.join(folder, filename), "w", encoding="utf-8") as f:
+                f.write(content)
+        save_to_file("prompt.txt", first_prompt)
+        save_to_file("response.txt", analysis)
+    
+    # Ask user what to do next
+    print("\n\nWhat would you like to do next?")
+    print("1: Apply changes")
+    print("2: Copy first code block to clipboard")
+    print("3: Do nothing")
+    
+    choice = input("Enter your choice (1-3): ")
+    
+    if choice == "1":
+        # Second LLM request - Generate search/replace blocks
+        second_prompt = f"""
 {code}
 
 I have previously given the following prompt to an assistant: {user_instruction}
@@ -56,16 +79,34 @@ The assistant gave the following response:
 {INSTRUCTIONS_SUFFIX}
 """.strip()
 
-    print("\n\n*** Generating code changes ***\n")
-    try:
-        changes_response = send_to_llm_streaming(second_prompt)
-    except:
-        print("\n\n****** ERROR: Could not generate code changes! Trying again ******\n")
-        changes_response = send_to_llm_streaming(second_prompt)
+        print("\n\n*** Generating code changes ***\n")
+        try:
+            changes_response = send_to_llm_streaming(second_prompt)
+        except:
+            print("\n\n****** ERROR: Could not generate code changes! Trying again ******\n")
+            changes_response = send_to_llm_streaming(second_prompt)
+        
+        if SAVE_HISTORY:
+            save_to_file("changes_response.txt", changes_response)
+        changes = extract_changes_from_response(changes_response)
+        if changes:
+            apply_changes_to_codebase(project, changes)
+            print("\n\n*** Changes applied where possible ***\n")
+        else:
+            print("\n\n****** ERROR: Could not find any search and replace pairs! ******\n")
     
-    changes = extract_changes_from_response(changes_response)
-    if changes:
-        apply_changes_to_codebase(project, changes)
-        print("\n\n*** Changes applied where possible ***\n")
+    elif choice == "2":
+        first_codeblock = extract_first_codeblock(analysis)
+        if first_codeblock:
+            if copy_to_clipboard(first_codeblock):
+                print("First code block copied to clipboard!")
+            else:
+                print("Failed to copy to clipboard. Make sure pyperclip is installed.")
+        else:
+            print("No code block found to copy!")
+    
+    elif choice == "3":
+        print("No action taken.")
+    
     else:
-        print("\n\n****** ERROR: Could not find any search and replace pairs! ******\n")
+        print("Invalid choice. No action taken.")

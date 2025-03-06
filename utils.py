@@ -2,6 +2,8 @@ import os
 import re
 import json
 from constants import PREVENT_LAZINESS_PREFIX, MODEL_LIST, client, DEBUG, CODE_BLOCK
+import tiktoken
+enc = tiktoken.get_encoding("o200k_base")
 
 def read_file(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -103,6 +105,9 @@ def send_to_llm_streaming(prompt:str) -> str:
             full_response += content
 
     print()
+    print()
+    print(f"Tokens used: {len(enc.encode(prompt))}+{len(enc.encode(full_response))}")
+    print()
     return full_response
 
 def load_config():
@@ -173,3 +178,32 @@ def print_list_of_files(project):
     for i, file in enumerate(project['files']):
         status = "[x]" if file['included'] else "[ ]"
         print(f"{i}. {status} {file['name']} ({file['language']})")
+
+
+def extract_first_codeblock(text):
+    """Extract the first code block from text."""
+    in_code_block = False
+    code_lines = []
+    
+    for line in text.split('\n'):
+        if line.strip().startswith('```'):
+            if not in_code_block:
+                in_code_block = True
+                continue
+            else:
+                in_code_block = False
+                return '\n'.join(code_lines)
+        if in_code_block:
+            code_lines.append(line)
+    
+    return ""  # Return empty string if no code block found
+
+def copy_to_clipboard(text):
+    """Copy text to clipboard."""
+    try:
+        import pyperclip
+        pyperclip.copy(text)
+        return True
+    except Exception as e:
+        print(f"Error copying to clipboard: {e}")
+        return False
