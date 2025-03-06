@@ -4,7 +4,8 @@ import time
 from utils import (extract_changes_from_response, send_to_llm_streaming, 
                   load_config, get_project, print_list_of_files, toggle_file, 
                   get_concatenated_code, apply_changes_to_codebase,
-                  extract_first_codeblock, copy_to_clipboard)
+                  extract_first_codeblock, copy_to_clipboard,
+                  delete_empty_lines_and_trailing_whitespace, read_file, write_file)
 from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY
 
 if len(sys.argv) != 2:
@@ -14,6 +15,23 @@ if len(sys.argv) != 2:
 project_id = sys.argv[1]
 config = load_config()
 project = get_project(config, project_id)
+
+# Clean up all project files at startup
+print("Cleaning up files...")
+files_modified = 0
+for file in project['files']:
+    path = os.path.join(project['basePath'], file['name'])
+    original_content = read_file(path)
+    cleaned_content = delete_empty_lines_and_trailing_whitespace(original_content)
+    
+    if original_content != cleaned_content:
+        write_file(path, cleaned_content)
+        files_modified += 1
+
+if files_modified > 0:
+    print(f"Cleaned up {files_modified} file(s) by removing empty lines and trailing whitespace.")
+else:
+    print("No files needed cleanup.")
 
 while True:
     print_list_of_files(project)
