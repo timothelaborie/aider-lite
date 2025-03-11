@@ -7,6 +7,7 @@ from utils import (extract_changes_from_response, send_to_llm_streaming,
                   extract_first_codeblock, copy_to_clipboard,
                   delete_empty_lines_and_trailing_whitespace, read_file, write_file)
 from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY
+import pyperclip
 
 if len(sys.argv) != 2:
     print("Usage: python script.py <project_id>")
@@ -33,9 +34,12 @@ if files_modified > 0:
 else:
     print("No files needed cleanup.")
 
+
+
+# Main loop
 while True:
     print_list_of_files(project)
-    user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit): ")
+    user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '/clip' to use clipboard): ")
     
     if user_instruction.lower() == 'quit':
         break
@@ -49,11 +53,25 @@ while True:
             print("Invalid file index")
         continue
 
-    # Get concatenated code from all included files
-    code = get_concatenated_code(project)
-    if not code.strip():
-        print("No files are currently included!")
-        continue
+    # Check if it's a clipboard command
+    use_clipboard = False
+    if user_instruction.startswith('/clip '):
+        use_clipboard = True
+        user_instruction = user_instruction[6:]  # Remove '/clip ' prefix
+        try:
+            code = pyperclip.paste()
+            if not code.strip():
+                print("Clipboard is empty!")
+                continue
+        except Exception as e:
+            print(f"Error accessing clipboard: {e}")
+            continue
+    else:
+        # Get concatenated code from all included files
+        code = get_concatenated_code(project)
+        if not code.strip():
+            print("No files are currently included!")
+            continue
 
     # First LLM request - Analysis
     first_prompt = f"""
@@ -108,7 +126,7 @@ The assistant gave the following response:
             save_to_file("changes_response.txt", changes_response)
         changes = extract_changes_from_response(changes_response)
         if changes:
-            apply_changes_to_codebase(project, changes)
+            apply_changes_to_codebase(project, changes, include_all=use_clipboard)
             print("\n\n*** Changes applied where possible ***\n")
         else:
             print("\n\n****** ERROR: Could not find any search and replace pairs! ******\n")

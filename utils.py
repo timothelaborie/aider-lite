@@ -140,11 +140,11 @@ def get_concatenated_code(project):
             code_blocks.append(code)
     return '\n\n'.join(code_blocks)
 
-def apply_changes_to_codebase(project, changes):
+def apply_changes_to_codebase(project, changes, include_all = False):
     # First read all files into memory
     files_content = {}
     for file in project['files']:
-        if not file['included']:
+        if not file['included'] and not include_all:
             continue
             
         path = os.path.join(project['basePath'], file['name'])
