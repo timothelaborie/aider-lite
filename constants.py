@@ -3,10 +3,11 @@ import os
 
 SAVE_HISTORY = True
 PREVENT_LAZINESS_PREFIX = "The current date is Tuesday, October 8th 2024, 10:30am"
-SYSTEM_INSTRUCTIONS = "\nWhen modifying code, avoid adding end-of-line comments like \"// Add new property here\""
-SYSTEM_PROMPT = PREVENT_LAZINESS_PREFIX + SYSTEM_INSTRUCTIONS
+SYSTEM_INSTRUCTIONS = "\nWhen modifying code, avoid adding end-of-line comments like \"// Add new property here\".\nAvoid repeating long sequences of unchanged lines, instead, list the changes in one or more small code blocks."
+SYSTEM_PROMPT1 = PREVENT_LAZINESS_PREFIX + SYSTEM_INSTRUCTIONS
+SYSTEM_PROMPT2 = PREVENT_LAZINESS_PREFIX
 CODE_BLOCK = "```"
-MODEL_LIST = ["anthropic/claude-3.7-sonnet:beta", "openai/gpt-4o"]
+MODEL_LIST = ["anthropic/claude-3.7-sonnet:beta"]
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1/",

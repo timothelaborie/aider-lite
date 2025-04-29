@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from constants import SYSTEM_PROMPT, MODEL_LIST, client, DEBUG, CODE_BLOCK
+from constants import MODEL_LIST, client, DEBUG, CODE_BLOCK
 import tiktoken
 enc = tiktoken.get_encoding("o200k_base")
 
@@ -78,24 +78,38 @@ def extract_changes_from_response(llm_response):
     
     return changes
 
-def send_to_llm_streaming(prompt:str) -> str:
+def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool=False) -> str:
     if DEBUG:
         with open("debug_output.txt", "r") as f:
             return f.read()
 
     # print(prompt)
     # return "response"
-    response = client.chat.completions.create(
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+
+    msg = [
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
-        ],
-        stream=True,
-        temperature=0.0,
-        # model=model_list[0],
-        model=None,
-        extra_body={"route": "fallback","models": MODEL_LIST},
-    )
+        ]
+    
+    if not thinking:
+        response = client.chat.completions.create(
+            messages=msg,
+            stream=True,
+            temperature=0.0,
+            model=MODEL_LIST[0],
+        )
+    else:
+        response = client.chat.completions.create(
+            messages=msg,
+            stream=True,
+            temperature=0.0,
+            model=MODEL_LIST[0],
+            extra_body={
+                "reasoning": {
+                    "max_tokens": 3000
+                }
+            }
+        )
 
     full_response = ""
     for chunk in response:

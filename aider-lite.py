@@ -6,7 +6,7 @@ from utils import (extract_changes_from_response, send_to_llm_streaming,
                   get_concatenated_code, apply_changes_to_codebase,
                   extract_first_codeblock, copy_to_clipboard,
                   delete_empty_lines_and_trailing_whitespace, read_file, write_file)
-from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY
+from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY, SYSTEM_PROMPT1, SYSTEM_PROMPT2
 import pyperclip
 
 if len(sys.argv) != 2:
@@ -39,7 +39,7 @@ else:
 # Main loop
 while True:
     print_list_of_files(project)
-    user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '/clip' to use clipboard): ")
+    user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard): ")
     
     if user_instruction.lower() == 'quit':
         break
@@ -55,11 +55,11 @@ while True:
 
     # Check if it's a clipboard command
     use_clipboard = False
-    if user_instruction.startswith('/clip '):
+    if user_instruction.startswith('. '):
         use_clipboard = True
-        user_instruction = user_instruction[6:]  # Remove '/clip ' prefix
+        user_instruction = user_instruction[2:]  # Remove '. ' prefix
         try:
-            code = pyperclip.paste()
+            code = CODE_BLOCK + "\n" + pyperclip.paste() + "\n" + CODE_BLOCK
             if not code.strip():
                 print("Clipboard is empty!")
                 continue
@@ -73,6 +73,12 @@ while True:
             print("No files are currently included!")
             continue
 
+    # Copy whole project to clipboard if user wants to
+    if user_instruction == "copy":
+        pyperclip.copy(code)
+        print("Whole project copied to clipboard!")
+        continue
+
     # First LLM request - Analysis
     first_prompt = f"""
 {code}
@@ -80,7 +86,7 @@ while True:
 """.strip()
 
     print("\n\n*** Analyzing changes needed ***\n")
-    analysis = send_to_llm_streaming(first_prompt)
+    analysis = send_to_llm_streaming(first_prompt, SYSTEM_PROMPT1, thinking=True)
 
     if SAVE_HISTORY:
         folder = os.path.join("history", time.strftime("%Y-%m-%d_%H-%M-%S"))
@@ -96,8 +102,10 @@ while True:
     print("1: Apply changes")
     print("2: Copy first code block to clipboard")
     print("3: Do nothing")
+    if use_clipboard:
+        print("4: Apply changes naively")
     
-    choice = input("Enter your choice (1-3): ")
+    choice = input("Enter your choice: ")
     
     if choice == "1":
         # Second LLM request - Generate search/replace blocks
@@ -117,10 +125,10 @@ The assistant gave the following response:
 
         print("\n\n*** Generating code changes ***\n")
         try:
-            changes_response = send_to_llm_streaming(second_prompt)
+            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2)
         except:
             print("\n\n****** ERROR: Could not generate code changes! Trying again ******\n")
-            changes_response = send_to_llm_streaming(second_prompt)
+            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2)
         
         if SAVE_HISTORY:
             save_to_file("changes_response.txt", changes_response)
@@ -143,6 +151,14 @@ The assistant gave the following response:
     
     elif choice == "3":
         print("No action taken.")
+
+    elif choice == "4" and use_clipboard:
+        # Naive application of changes
+        clipboard_content = pyperclip.paste()
+        first_codeblock = extract_first_codeblock(analysis)
+        changes = [{"search": clipboard_content, "replace": first_codeblock}]
+        apply_changes_to_codebase(project, changes, include_all=True)
+        print("\n\n*** Changes applied naively ***\n")
     
     else:
         print("Invalid choice. No action taken.")
