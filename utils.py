@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from constants import MODEL_LIST, client, DEBUG, CODE_BLOCK
+from constants import CODER_MODELS, APPLY_MODELS, CODER_MODELS_THINKING, client, DEBUG, CODE_BLOCK
 import tiktoken
 enc = tiktoken.get_encoding("o200k_base")
 
@@ -78,7 +78,7 @@ def extract_changes_from_response(llm_response):
     
     return changes
 
-def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool=False) -> str:
+def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool, apply:bool) -> str:
     if DEBUG:
         with open("debug_output.txt", "r") as f:
             return f.read()
@@ -96,14 +96,14 @@ def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool=False) ->
             messages=msg,
             stream=True,
             temperature=0.0,
-            model=MODEL_LIST[0],
+            model=CODER_MODELS[0] if not apply else APPLY_MODELS[0],
         )
     else:
         response = client.chat.completions.create(
             messages=msg,
             stream=True,
             temperature=0.0,
-            model=MODEL_LIST[0],
+            model=CODER_MODELS_THINKING[0],
             extra_body={
                 "reasoning": {
                     "max_tokens": 3000
@@ -112,16 +112,30 @@ def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool=False) ->
         )
 
     full_response = ""
+    writing_reasoning = True
     for chunk in response:
-        if chunk.choices[0].delta.content is not None:
+        # print("chunk.choices[0].delta:", chunk.choices[0].delta)
+        if chunk.choices[0].delta is not None:
+            reasoning = ""
+            try:
+                reasoning = chunk.choices[0].delta.reasoning
+            except AttributeError:
+                pass
             content = chunk.choices[0].delta.content
-            print(content, end='', flush=True)
+
+            if reasoning is not None and len(reasoning) > 0:
+                print(reasoning, end='', flush=True)
+
+            if content is not None and len(content) > 0:
+                if writing_reasoning:
+                    print("\n\n\n\n\n\n\n\n", end='', flush=True)
+                    writing_reasoning = False
+
+                print(content, end='', flush=True)
+
             full_response += content
 
-    print()
-    print()
-    print(f"Tokens used: {len(enc.encode(prompt))}+{len(enc.encode(full_response))}")
-    print()
+    print(f"\n\n\n\nTokens used: {len(enc.encode(prompt))}+{len(enc.encode(full_response))}\n")
     return full_response
 
 def load_config():

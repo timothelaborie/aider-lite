@@ -86,7 +86,7 @@ while True:
 """.strip()
 
     print("\n\n*** Analyzing changes needed ***\n")
-    analysis = send_to_llm_streaming(first_prompt, SYSTEM_PROMPT1, thinking=True)
+    analysis = send_to_llm_streaming(first_prompt, SYSTEM_PROMPT1, thinking=False, apply=False)
 
     if SAVE_HISTORY:
         folder = os.path.join("history", time.strftime("%Y-%m-%d_%H-%M-%S"))
@@ -125,10 +125,10 @@ The assistant gave the following response:
 
         print("\n\n*** Generating code changes ***\n")
         try:
-            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2)
+            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2, thinking=False, apply=True)
         except:
             print("\n\n****** ERROR: Could not generate code changes! Trying again ******\n")
-            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2)
+            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2, thinking=False, apply=True)
         
         if SAVE_HISTORY:
             save_to_file("changes_response.txt", changes_response)
