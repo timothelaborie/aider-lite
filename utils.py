@@ -1,6 +1,7 @@
 import os
 import re
 import json
+from typing import List
 from constants import CODER_MODELS, APPLY_MODELS, CODER_MODELS_THINKING, client, DEBUG, CODE_BLOCK
 import tiktoken
 enc = tiktoken.get_encoding("o200k_base")
@@ -78,18 +79,17 @@ def extract_changes_from_response(llm_response):
     
     return changes
 
-def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool, apply:bool) -> str:
+def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> str:
     if DEBUG:
         with open("debug_output.txt", "r") as f:
             return f.read()
 
-    # print(prompt)
-    # return "response"
-
+    # Alternate roles, starting with user
+    roles = ["user", "assistant"]
     msg = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ]
+        {"role": roles[i % 2], "content": p}
+        for i, p in enumerate(prompts)
+    ]
     
     if not thinking:
         response = client.chat.completions.create(
@@ -114,7 +114,6 @@ def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool, apply:bo
     full_response = ""
     writing_reasoning = True
     for chunk in response:
-        # print("chunk.choices[0].delta:", chunk.choices[0].delta)
         if chunk.choices[0].delta is not None:
             reasoning = ""
             try:
@@ -128,14 +127,15 @@ def send_to_llm_streaming(prompt:str, system_prompt:str, thinking:bool, apply:bo
 
             if content is not None and len(content) > 0:
                 if writing_reasoning:
-                    print("\n\n\n\n\n\n\n\n", end='', flush=True)
+                    if thinking:
+                        print("\n\n\n\n\n\n\n\n", end='', flush=True)
                     writing_reasoning = False
 
                 print(content, end='', flush=True)
 
             full_response += content
 
-    print(f"\n\n\n\nTokens used: {len(enc.encode(prompt))}+{len(enc.encode(full_response))}\n")
+    print(f"\n\n\n\nTokens used: {len(enc.encode(' '.join(prompts)))}+{len(enc.encode(full_response))}\n")
     return full_response
 
 def load_config():

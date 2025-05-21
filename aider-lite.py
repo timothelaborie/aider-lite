@@ -6,7 +6,7 @@ from utils import (extract_changes_from_response, send_to_llm_streaming,
                   get_concatenated_code, apply_changes_to_codebase,
                   extract_first_codeblock, copy_to_clipboard,
                   delete_empty_lines_and_trailing_whitespace, read_file, write_file)
-from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY, SYSTEM_PROMPT1, SYSTEM_PROMPT2
+from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY
 import pyperclip
 
 if len(sys.argv) != 2:
@@ -86,7 +86,7 @@ while True:
 """.strip()
 
     print("\n\n*** Analyzing changes needed ***\n")
-    analysis = send_to_llm_streaming(first_prompt, SYSTEM_PROMPT1, thinking=False, apply=False)
+    analysis = send_to_llm_streaming([first_prompt], thinking=False, apply=False)
 
     if SAVE_HISTORY:
         folder = os.path.join("history", time.strftime("%Y-%m-%d_%H-%M-%S"))
@@ -109,29 +109,18 @@ while True:
     
     if choice == "1":
         # Second LLM request - Generate search/replace blocks
-        second_prompt = f"""
-{code}
-
-I have previously given the following prompt to an assistant: {user_instruction}
-
-The assistant gave the following response:
-<response>
-{analysis}
-</response>
-
-
-{INSTRUCTIONS_SUFFIX}
-""".strip()
+        second_prompt = INSTRUCTIONS_SUFFIX
 
         print("\n\n*** Generating code changes ***\n")
-        try:
-            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2, thinking=False, apply=True)
-        except:
-            print("\n\n****** ERROR: Could not generate code changes! Trying again ******\n")
-            changes_response = send_to_llm_streaming(second_prompt, SYSTEM_PROMPT2, thinking=False, apply=True)
+        changes_response = send_to_llm_streaming(
+            [first_prompt, analysis, second_prompt],
+            thinking=False,
+            apply=True
+        )
         
         if SAVE_HISTORY:
             save_to_file("changes_response.txt", changes_response)
+
         changes = extract_changes_from_response(changes_response)
         if changes:
             apply_changes_to_codebase(project, changes, include_all=use_clipboard)

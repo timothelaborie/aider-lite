@@ -2,15 +2,11 @@ from openai import OpenAI
 import os
 
 SAVE_HISTORY = True
-PREVENT_LAZINESS_PREFIX = "The current date is Tuesday, October 8th 2024, 10:30am"
-SYSTEM_INSTRUCTIONS = "\nWhen modifying code, avoid adding end-of-line comments like \"// Add this line\".\nAvoid repeating long sequences of unchanged lines, instead, list the changes in one or more small code blocks. Don't be lazy and make all of the changes necessary."
-SYSTEM_PROMPT1 = PREVENT_LAZINESS_PREFIX + SYSTEM_INSTRUCTIONS
-SYSTEM_PROMPT2 = PREVENT_LAZINESS_PREFIX
 CODE_BLOCK = "```"
 
 APPLY_MODELS = ["openai/gpt-4.1"]
 CODER_MODELS = ["openai/gpt-4.1","anthropic/claude-3.7-sonnet:beta"]
-CODER_MODELS_THINKING = ["anthropic/claude-3.7-sonnet:thinking","google/gemini-2.5-pro-preview"]
+CODER_MODELS_THINKING = ["google/gemini-2.5-pro-preview", "anthropic/claude-3.7-sonnet:thinking"]
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1/",

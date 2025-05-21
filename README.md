@@ -30,14 +30,14 @@ Example config.json:
       "basePath": "/path/to/project",
       "files": [
         {
-          "name": "main.py",
-          "language": "python",
-          "included": true
-        },
-        {
           "name": "utils.py",
           "language": "python",
           "included": false
+        },
+        {
+          "name": "main.py",
+          "language": "python",
+          "included": true
         }
       ]
     }
