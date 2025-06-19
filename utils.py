@@ -31,7 +31,7 @@ def add_indentation(text):
 def apply_changes_to_code(code, changes):
     any_changes_applied = False
     code = delete_empty_lines_and_trailing_whitespace(code)
-    
+
     for (j,change) in enumerate(changes):
         search = change['search']
         replace = change['replace']
@@ -60,7 +60,7 @@ def extract_changes_from_response(llm_response):
     current_change = {}
     in_code_block = False
     code_block_content = []
-    
+
     for line in llm_response.split('\n'):
         if line.strip().startswith('```'):
             if in_code_block:
@@ -76,7 +76,7 @@ def extract_changes_from_response(llm_response):
                 in_code_block = True
         elif in_code_block:
             code_block_content.append(line)
-    
+
     return changes
 
 def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> str:
@@ -90,7 +90,7 @@ def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> st
         {"role": roles[i % 2], "content": p}
         for i, p in enumerate(prompts)
     ]
-    
+
     if not thinking:
         response = client.chat.completions.create(
             messages=msg,
@@ -158,11 +158,13 @@ def get_concatenated_code(project):
     code_blocks = []
     for file in project['files']:
         if file['included']:
-            path = os.path.join(project['basePath'], file['name'])
+            name = file['name']
+            path = os.path.join(project['basePath'], name)
             lang = file['language']
             code = read_file(path)
             code = delete_empty_lines_and_trailing_whitespace(code)
-            code = f"""{CODE_BLOCK}{lang}
+            code = f"""{name}:
+{CODE_BLOCK}{lang}
 {code}
 {CODE_BLOCK}"""
             code_blocks.append(code)
@@ -174,15 +176,15 @@ def apply_changes_to_codebase(project, changes, include_all = False):
     for file in project['files']:
         if not file['included'] and not include_all:
             continue
-            
+
         path = os.path.join(project['basePath'], file['name'])
         files_content[path] = read_file(path)
-    
+
     # Process each change across all files
     for change in changes:
         print(f"\nApplying change: {change['search'].replace('\n', ' ')[:20]}...")
         change_success = False
-        
+
         # Apply this change to all files
         for path, code in files_content.items():
             print(f"Processing file: {os.path.basename(path)}")
@@ -195,7 +197,7 @@ def apply_changes_to_codebase(project, changes, include_all = False):
 
         if not change_success:
             print("Change could not be applied to any file!")
-    
+
     # Write all modified files
     for path, code in files_content.items():
         write_file(path, code)
@@ -212,7 +214,7 @@ def extract_first_codeblock(text):
     """Extract the first code block from text."""
     in_code_block = False
     code_lines = []
-    
+
     for line in text.split('\n'):
         if line.strip().startswith('```'):
             if not in_code_block:
@@ -223,7 +225,7 @@ def extract_first_codeblock(text):
                 return '\n'.join(code_lines)
         if in_code_block:
             code_lines.append(line)
-    
+
     return ""  # Return empty string if no code block found
 
 def copy_to_clipboard(text):
