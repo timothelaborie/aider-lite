@@ -4,9 +4,13 @@ import os
 SAVE_HISTORY = True
 CODE_BLOCK = "```"
 
-APPLY_MODELS = ["anthropic/claude-sonnet-4","openai/gpt-4.1"]
-CODER_MODELS = ["openai/gpt-4.1","anthropic/claude-sonnet-4",]
-CODER_MODELS_THINKING = ["anthropic/claude-sonnet-4","google/gemini-2.5-pro-preview"]
+APPLY_MODELS = ["anthropic/claude-opus-4.5"]
+CODER_MODELS = ["anthropic/claude-opus-4.5"]
+CODER_MODELS_THINKING = ["anthropic/claude-opus-4.5"]
+
+# APPLY_MODELS = ["openai/gpt-5-codex"]
+# CODER_MODELS = ["openai/gpt-5-codex"]
+# CODER_MODELS_THINKING = ["openai/gpt-5-codex"]
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1/",
@@ -27,6 +31,8 @@ Each pair of code blocks will replace the first matching occurrence.
 search sections should always contain at least 5 lines so that there is exactly one match in the code (very important).
 Do not create search sections that only contain closing brackets like }}, as they are ambiguous. Always include at least 2 of the lines that come before the brackets.
 "replace" sections should not contain placeholder comments like "// ... keep existing implementation" or conversational comments like "// <-- add this"
+
+If it feels like an important file is missing from the context, then ask for it to be included instead of writing code blocks.
 """.strip()
 
 DEBUG = False

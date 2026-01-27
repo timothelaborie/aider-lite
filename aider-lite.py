@@ -45,7 +45,7 @@ class CodeAssistant:
     def get_code_for_analysis(self, user_instruction):
         use_clipboard = user_instruction.startswith('. ')
         if use_clipboard:
-            instruction = user_instruction[2:]  # Remove '. ' prefix
+            instruction = user_instruction[2:]  # Remove ', ' prefix
             try:
                 code = CODE_BLOCK + "\n" + pyperclip.paste() + "\n" + CODE_BLOCK
                 if not code.strip():
@@ -68,6 +68,10 @@ class CodeAssistant:
         pyperclip.copy(code)
         print("Whole project copied to clipboard!")
 
+    def handle_copy_instructions(self):
+        pyperclip.copy(INSTRUCTIONS_SUFFIX)
+        print("Code block instructions copied to clipboard!")
+
     def save_history(self, filename, content):
         if not SAVE_HISTORY:
             return
@@ -83,7 +87,7 @@ class CodeAssistant:
         prompt = f"{code}\n{instruction}".strip()
 
         print("\n\n*** Analyzing changes needed ***\n")
-        analysis = send_to_llm_streaming([prompt], thinking=False, apply=False)
+        analysis = send_to_llm_streaming([prompt], thinking=True, apply=False)
 
         self.save_history("prompt.txt", prompt)
         self.save_history("response.txt", analysis)
@@ -153,13 +157,47 @@ class CodeAssistant:
             print("\n\n****** ERROR: Could not find any search and replace pairs in clipboard! ******\n")
             print("Make sure clipboard contains properly formatted code block pairs.")
 
+    def handle_paste_changes_selected(self):
+        try:
+            clipboard_content = pyperclip.paste()
+            if not clipboard_content.strip():
+                print("Clipboard is empty!")
+                return
+        except Exception as e:
+            print(f"Error accessing clipboard: {e}")
+            return
+
+        print("\n\n*** Applying changes from clipboard to selected files only ***\n")
+
+        # Save the pasted content to history
+        self.save_history("pasted_changes_selected.txt", clipboard_content)
+
+        # Extract changes from the clipboard content
+        changes = extract_changes_from_response(clipboard_content)
+
+        if changes:
+            # Apply changes only to selected files (include_all=False)
+            apply_changes_to_codebase(self.project, changes, include_all=False)
+            print("\n\n*** Changes applied where possible ***\n")
+        else:
+            print("\n\n****** ERROR: Could not find any search and replace pairs in clipboard! ******\n")
+            print("Make sure clipboard contains properly formatted code block pairs.")
+
     def process_instruction(self, user_instruction):
         if user_instruction == "copy":
             self.handle_copy_project()
             return
 
+        if user_instruction == "copy2":
+            self.handle_copy_instructions()
+            return
+
         if user_instruction == "paste":
             self.handle_paste_changes()
+            return
+
+        if user_instruction == "paste2":
+            self.handle_paste_changes_selected()
             return
 
         # Check if prompt starts with ", " and if yes, perform analysis
@@ -208,7 +246,7 @@ class CodeAssistant:
 
         while True:
             print_list_of_files(self.project)
-            user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard, 'paste' to apply clipboard changes): ")
+            user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard, 'copy2' to copy instructions, 'paste' to apply clipboard changes, 'paste2' for selected files only): ")
 
             if user_instruction.lower() == 'quit':
                 break

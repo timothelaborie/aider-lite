@@ -15,6 +15,8 @@ def write_file(filename, content):
         file.write(content)
 
 def delete_empty_lines_and_trailing_whitespace(code):
+    # Normalize all line endings to LF
+    code = code.replace('\r\n', '\n').replace('\r', '\n')
     # "empty lines" are lines with only whitespaces, they are made empty to avoid issues with the LLM
     return re.sub(r"[ \t]+$", "", code, flags=re.MULTILINE)
 
@@ -106,7 +108,8 @@ def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> st
             model=CODER_MODELS_THINKING[0],
             extra_body={
                 "reasoning": {
-                    "max_tokens": 3000
+                    # "max_tokens": 3000
+                    'effort': 'low'  # Can be 'minimal', 'low', 'medium', or 'high'
                 }
             }
         )
