@@ -81,7 +81,7 @@ def extract_changes_from_response(llm_response):
 
     return changes
 
-def send_to_llm_streaming(prompts: List[str]) -> str:
+def send_to_llm_streaming(prompts: List[str], model: str = None) -> str:
     if DEBUG:
         with open("debug_output.txt", "r") as f:
             return f.read()
@@ -97,7 +97,7 @@ def send_to_llm_streaming(prompts: List[str]) -> str:
         messages=msg,
         stream=True,
         temperature=0.0,
-        model=CODER_MODELS[0],
+        model=model or CODER_MODELS[0],
     )
 
     full_response = ""

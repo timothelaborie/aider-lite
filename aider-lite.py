@@ -151,6 +151,11 @@ class CodeAssistant:
             self.handle_paste_changes_selected()
             return
 
+        model = None
+        if user_instruction.startswith("opus "):
+            user_instruction = user_instruction[5:]
+            model = "anthropic/claude-opus-4.6"
+
         code, instruction, use_clipboard = self.get_code_for_analysis(user_instruction)
         if code is None:
             return
@@ -158,7 +163,7 @@ class CodeAssistant:
         first_prompt = f"{code}\n\nThe user prompt is:\n{instruction}\n\n\n{INSTRUCTIONS_SUFFIX}".strip()
 
         print("\n\n*** Generating code changes ***\n")
-        changes_response = send_to_llm_streaming([first_prompt])
+        changes_response = send_to_llm_streaming([first_prompt], model=model)
 
         self.save_history("prompt.txt", first_prompt)
         self.save_history("changes_response.txt", changes_response)
