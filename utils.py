@@ -2,7 +2,7 @@ import os
 import re
 import json
 from typing import List
-from constants import CODER_MODELS, APPLY_MODELS, CODER_MODELS_THINKING, client, DEBUG, CODE_BLOCK
+from constants import CODER_MODELS, client, DEBUG, CODE_BLOCK
 import tiktoken
 enc = tiktoken.get_encoding("o200k_base")
 
@@ -81,7 +81,7 @@ def extract_changes_from_response(llm_response):
 
     return changes
 
-def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> str:
+def send_to_llm_streaming(prompts: List[str]) -> str:
     if DEBUG:
         with open("debug_output.txt", "r") as f:
             return f.read()
@@ -93,53 +93,23 @@ def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> st
         for i, p in enumerate(prompts)
     ]
 
-    if not thinking:
-        response = client.chat.completions.create(
-            messages=msg,
-            stream=True,
-            temperature=0.0,
-            model=CODER_MODELS[0] if not apply else APPLY_MODELS[0],
-        )
-    else:
-        response = client.chat.completions.create(
-            messages=msg,
-            stream=True,
-            temperature=0.0,
-            model=CODER_MODELS_THINKING[0],
-            extra_body={
-                "reasoning": {
-                    # "max_tokens": 3000
-                    'effort': 'low'  # Can be 'minimal', 'low', 'medium', or 'high'
-                }
-            }
-        )
+    response = client.chat.completions.create(
+        messages=msg,
+        stream=True,
+        temperature=0.0,
+        model=CODER_MODELS[0],
+    )
 
     full_response = ""
-    writing_reasoning = True
     try:
         for chunk in response:
             if not chunk.choices:
                 continue
             if chunk.choices[0].delta is not None:
-                reasoning = ""
-                try:
-                    reasoning = chunk.choices[0].delta.reasoning
-                except AttributeError:
-                    pass
                 content = chunk.choices[0].delta.content
-
-                if reasoning is not None and len(reasoning) > 0:
-                    print(reasoning, end='', flush=True)
-
                 if content is not None and len(content) > 0:
-                    if writing_reasoning:
-                        if thinking:
-                            print("\n\n\n\n\n\n\n\n", end='', flush=True)
-                        writing_reasoning = False
-
                     print(content, end='', flush=True)
-
-                full_response += content
+                    full_response += content
     except KeyboardInterrupt:
         print("\n\n[Generation interrupted]", flush=True)
 

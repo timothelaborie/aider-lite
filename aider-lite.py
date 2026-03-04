@@ -4,7 +4,6 @@ import time
 from utils import (extract_changes_from_response, send_to_llm_streaming,
                   load_config, get_project, print_list_of_files, toggle_file,
                   get_concatenated_code, apply_changes_to_codebase,
-                  extract_first_codeblock, copy_to_clipboard,
                   delete_empty_lines_and_trailing_whitespace, read_file, write_file)
 from constants import CODE_BLOCK, INSTRUCTIONS_SUFFIX, SAVE_HISTORY
 import pyperclip
@@ -83,54 +82,6 @@ class CodeAssistant:
         with open(os.path.join(self.history_folder, filename), "w", encoding="utf-8") as f:
             f.write(content)
 
-    def analyze_changes(self, code, instruction):
-        prompt = f"{code}\n{instruction}".strip()
-
-        print("\n\n*** Analyzing changes needed ***\n")
-        analysis = send_to_llm_streaming([prompt], thinking=True, apply=False)
-
-        self.save_history("prompt.txt", prompt)
-        self.save_history("response.txt", analysis)
-
-        return prompt, analysis
-
-    def apply_changes_workflow(self, first_prompt, analysis, use_clipboard):
-        second_prompt = INSTRUCTIONS_SUFFIX
-
-        print("\n\n*** Generating code changes ***\n")
-        changes_response = send_to_llm_streaming(
-            [first_prompt, analysis, second_prompt],
-            thinking=False,
-            apply=True
-        )
-
-        self.save_history("changes_response.txt", changes_response)
-
-        changes = extract_changes_from_response(changes_response)
-        if changes:
-            apply_changes_to_codebase(self.project, changes, include_all=use_clipboard)
-            print("\n\n*** Changes applied where possible ***\n")
-        else:
-            print("\n\n****** ERROR: Could not find any search and replace pairs! ******\n")
-
-    def copy_first_codeblock_workflow(self, analysis):
-        first_codeblock = extract_first_codeblock(analysis)
-        if first_codeblock:
-            if copy_to_clipboard(first_codeblock):
-                print("First code block copied to clipboard!")
-            else:
-                print("Failed to copy to clipboard. Make sure pyperclip is installed.")
-        else:
-            print("No code block found to copy!")
-
-    def get_user_choice_after_analysis(self):
-        print("\n\nWhat would you like to do next?")
-        print("1: Apply changes")
-        print("2: Copy first code block to clipboard")
-        print("3: Do nothing")
-
-        return input("Enter your choice: ")
-
     def handle_paste_changes(self):
         try:
             clipboard_content = pyperclip.paste()
@@ -200,45 +151,24 @@ class CodeAssistant:
             self.handle_paste_changes_selected()
             return
 
-        # Check if prompt starts with ", " and if yes, perform analysis
-        do_analysis = user_instruction.startswith(', ')
-        if do_analysis:
-            user_instruction = user_instruction[2:]  # Remove ', ' prefix
-
         code, instruction, use_clipboard = self.get_code_for_analysis(user_instruction)
         if code is None:
             return
 
-        if do_analysis:
-            # Workflow with analysis
-            first_prompt, analysis = self.analyze_changes(code, instruction)
-            choice = self.get_user_choice_after_analysis()
+        first_prompt = f"{code}\n\nThe user prompt is:\n{instruction}\n\n\n{INSTRUCTIONS_SUFFIX}".strip()
 
-            if choice == "1":
-                self.apply_changes_workflow(first_prompt, analysis, use_clipboard)
-            elif choice == "2":
-                self.copy_first_codeblock_workflow(analysis)
-            elif choice == "3":
-                print("No action taken.")
-            else:
-                print("Invalid choice. No action taken.")
+        print("\n\n*** Generating code changes ***\n")
+        changes_response = send_to_llm_streaming([first_prompt])
 
+        self.save_history("prompt.txt", first_prompt)
+        self.save_history("changes_response.txt", changes_response)
+
+        changes = extract_changes_from_response(changes_response)
+        if changes:
+            apply_changes_to_codebase(self.project, changes, include_all=use_clipboard)
+            print("\n\n*** Changes applied where possible ***\n")
         else:
-            # Skip analysis, go directly to changes generation
-            first_prompt = f"{code}\n\nThe user prompt is:\n{instruction}\n\n\n{INSTRUCTIONS_SUFFIX}".strip()
-
-            print("\n\n*** Generating code changes ***\n")
-            changes_response = send_to_llm_streaming([first_prompt], thinking=True, apply=True)
-
-            self.save_history("prompt.txt", first_prompt)
-            self.save_history("changes_response.txt", changes_response)
-
-            changes = extract_changes_from_response(changes_response)
-            if changes:
-                apply_changes_to_codebase(self.project, changes, include_all=use_clipboard)
-                print("\n\n*** Changes applied where possible ***\n")
-            else:
-                print("\n\n****** ERROR: Could not find any search and replace pairs! ******\n")
+            print("\n\n****** ERROR: Could not find any search and replace pairs! ******\n")
 
 
     def run(self):

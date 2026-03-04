@@ -4,13 +4,9 @@ import os
 SAVE_HISTORY = True
 CODE_BLOCK = "```"
 
-APPLY_MODELS = ["anthropic/claude-sonnet-4.6"]
 CODER_MODELS = ["anthropic/claude-sonnet-4.6"]
-CODER_MODELS_THINKING = ["anthropic/claude-sonnet-4.6"]
 
-# APPLY_MODELS = ["openai/gpt-5-codex"]
 # CODER_MODELS = ["openai/gpt-5-codex"]
-# CODER_MODELS_THINKING = ["openai/gpt-5-codex"]
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1/",
