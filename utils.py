@@ -116,27 +116,32 @@ def send_to_llm_streaming(prompts: List[str], thinking: bool, apply: bool) -> st
 
     full_response = ""
     writing_reasoning = True
-    for chunk in response:
-        if chunk.choices[0].delta is not None:
-            reasoning = ""
-            try:
-                reasoning = chunk.choices[0].delta.reasoning
-            except AttributeError:
-                pass
-            content = chunk.choices[0].delta.content
+    try:
+        for chunk in response:
+            if not chunk.choices:
+                continue
+            if chunk.choices[0].delta is not None:
+                reasoning = ""
+                try:
+                    reasoning = chunk.choices[0].delta.reasoning
+                except AttributeError:
+                    pass
+                content = chunk.choices[0].delta.content
 
-            if reasoning is not None and len(reasoning) > 0:
-                print(reasoning, end='', flush=True)
+                if reasoning is not None and len(reasoning) > 0:
+                    print(reasoning, end='', flush=True)
 
-            if content is not None and len(content) > 0:
-                if writing_reasoning:
-                    if thinking:
-                        print("\n\n\n\n\n\n\n\n", end='', flush=True)
-                    writing_reasoning = False
+                if content is not None and len(content) > 0:
+                    if writing_reasoning:
+                        if thinking:
+                            print("\n\n\n\n\n\n\n\n", end='', flush=True)
+                        writing_reasoning = False
 
-                print(content, end='', flush=True)
+                    print(content, end='', flush=True)
 
-            full_response += content
+                full_response += content
+    except KeyboardInterrupt:
+        print("\n\n[Generation interrupted]", flush=True)
 
     print(f"\n\n\n\nTokens used: {len(enc.encode(' '.join(prompts)))}+{len(enc.encode(full_response))}\n")
     return full_response

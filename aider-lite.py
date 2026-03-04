@@ -246,7 +246,11 @@ class CodeAssistant:
 
         while True:
             print_list_of_files(self.project)
-            user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard, 'copy2' to copy instructions, 'paste' to apply clipboard changes, 'paste2' for selected files only): ")
+            try:
+                user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard, 'copy2' to copy instructions, 'paste' to apply clipboard changes, 'paste2' for selected files only): ")
+            except KeyboardInterrupt:
+                print("\nUse 'quit' to exit.")
+                continue
 
             if user_instruction.lower() == 'quit':
                 break
@@ -254,7 +258,10 @@ class CodeAssistant:
             if self.handle_file_toggle(user_instruction):
                 continue
 
-            self.process_instruction(user_instruction)
+            try:
+                self.process_instruction(user_instruction)
+            except KeyboardInterrupt:
+                print("\n[Interrupted. Returning to prompt...]")
 
 def main():
     if len(sys.argv) != 2:

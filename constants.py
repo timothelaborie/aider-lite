@@ -4,9 +4,9 @@ import os
 SAVE_HISTORY = True
 CODE_BLOCK = "```"
 
-APPLY_MODELS = ["anthropic/claude-opus-4.5"]
-CODER_MODELS = ["anthropic/claude-opus-4.5"]
-CODER_MODELS_THINKING = ["anthropic/claude-opus-4.5"]
+APPLY_MODELS = ["anthropic/claude-sonnet-4.6"]
+CODER_MODELS = ["anthropic/claude-sonnet-4.6"]
+CODER_MODELS_THINKING = ["anthropic/claude-sonnet-4.6"]
 
 # APPLY_MODELS = ["openai/gpt-5-codex"]
 # CODER_MODELS = ["openai/gpt-5-codex"]
@@ -33,6 +33,10 @@ Do not create search sections that only contain closing brackets like }}, as the
 "replace" sections should not contain placeholder comments like "// ... keep existing implementation" or conversational comments like "// <-- add this"
 
 If it feels like an important file is missing from the context, then ask for it to be included instead of writing code blocks.
+Coding guidelines:
+Avoid excessive code duplication
+When using typescript, do not use "any"
+Do not worry about backwards compatibility
 """.strip()
 
 DEBUG = False
