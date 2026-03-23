@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import time
 from utils import (extract_changes_from_response, send_to_llm_streaming,
                   load_config, get_project, print_list_of_files, toggle_file,
@@ -151,9 +152,18 @@ class CodeAssistant:
             self.handle_paste_changes_selected()
             return
 
+        if user_instruction == "clear":
+            for file in self.project['files']:
+                file['included'] = False
+            print("Cleared all file selections.")
+            return
+
         model = None
         if user_instruction.startswith("opus "):
             user_instruction = user_instruction[5:]
+            model = "anthropic/claude-opus-4.6"
+        elif re.search(r'\s{5,}opus$', user_instruction):
+            user_instruction = re.sub(r'\s{5,}opus$', '', user_instruction)
             model = "anthropic/claude-opus-4.6"
 
         code, instruction, use_clipboard = self.get_code_for_analysis(user_instruction)
@@ -182,7 +192,7 @@ class CodeAssistant:
         while True:
             print_list_of_files(self.project)
             try:
-                user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard, 'copy2' to copy instructions, 'paste' to apply clipboard changes, 'paste2' for selected files only): ")
+                user_instruction = input("\nEnter your instruction (number to toggle, 'quit' to exit, '.' to use clipboard, 'copy2' to copy instructions, 'paste' to apply clipboard changes, 'paste2' for selected files only, 'clear' to deselect all files): ")
             except KeyboardInterrupt:
                 print("\nUse 'quit' to exit.")
                 continue
