@@ -93,21 +93,40 @@ def send_to_llm_streaming(prompts: List[str], model: str = None) -> str:
         for i, p in enumerate(prompts)
     ]
 
+    extra_params = {}
+    extra_params["extra_body"] = {
+        "reasoning": {"enabled": True}
+    }
+
     response = client.chat.completions.create(
         messages=msg,
         stream=True,
         temperature=0.0,
         model=model or CODER_MODELS[0],
+        **extra_params
     )
 
     full_response = ""
+    in_thinking = False
     try:
         for chunk in response:
             if not chunk.choices:
                 continue
-            if chunk.choices[0].delta is not None:
-                content = chunk.choices[0].delta.content
+            delta = chunk.choices[0].delta
+            if delta is not None:
+                # Check for reasoning/thinking content
+                reasoning = getattr(delta, 'reasoning_content', None) or getattr(delta, 'reasoning', None)
+                if reasoning:
+                    if not in_thinking:
+                        print("\n--- THINKING ---\n", flush=True)
+                        in_thinking = True
+                    print(reasoning, end='', flush=True)
+
+                content = delta.content
                 if content is not None and len(content) > 0:
+                    if in_thinking:
+                        print("\n\n--- RESPONSE ---\n", flush=True)
+                        in_thinking = False
                     print(content, end='', flush=True)
                     full_response += content
     except KeyboardInterrupt:
@@ -156,7 +175,7 @@ def apply_changes_to_codebase(project, changes, include_all = False):
             continue
 
         path = os.path.join(project['basePath'], file['name'])
-        files_content[path] = read_file(path)
+        files_content[path] = delete_empty_lines_and_trailing_whitespace(read_file(path))
 
     # Process each change across all files
     for change in changes:
